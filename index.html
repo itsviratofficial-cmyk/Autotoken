@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>@REALSUNIO | Pink Luxury v4.0</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&display=swap" rel="stylesheet">
+    <style>
+        body { background: radial-gradient(circle, #1a000a 0%, #050005 100%); font-family: 'Segoe UI', sans-serif; overflow-x: hidden; }
+        .pink-glow { text-shadow: 0 0 15px #ff007f; }
+        .pink-border { border: 1px solid #ff007f; box-shadow: 0 0 20px rgba(255, 0, 127, 0.1); }
+        .orbitron { font-family: 'Orbitron', sans-serif; }
+        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); }
+    </style>
+</head>
+<body class="text-zinc-200 min-h-screen">
+    <audio id="beep" src="https://www.soundjay.com/buttons/sounds/button-3.mp3" preload="auto"></audio>
+
+    <header class="p-5 border-b border-pink-900/40 glass flex justify-between items-center sticky top-0 z-50">
+        <div class="flex items-center gap-4">
+            <div class="h-12 w-12 rounded-full border-2 border-pink-600 flex items-center justify-center font-bold text-pink-500 orbitron">RS</div>
+            <div>
+                <h1 class="text-2xl font-black orbitron pink-glow text-[#ff007f]">@REALSUNIO</h1>
+                <p class="text-[9px] tracking-[0.4em] text-pink-400 uppercase">Automated SMS Infrastructure</p>
+            </div>
+        </div>
+        <div id="status" class="px-5 py-1.5 rounded-full border border-pink-600/50 text-pink-500 text-[10px] font-bold tracking-widest bg-pink-950/20">
+            SYSTEM OFFLINE
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <div class="lg:col-span-4 space-y-6">
+            <div class="glass p-6 rounded-[2rem] pink-border">
+                <h2 class="text-xs font-bold mb-5 text-pink-400 orbitron tracking-tighter italic">// CLOUD INJECTION</h2>
+                <input type="file" id="jsonFile" class="hidden">
+                <button onclick="document.getElementById('jsonFile').click()" class="w-full bg-pink-600/5 hover:bg-pink-600/20 py-4 rounded-2xl text-pink-400 text-[10px] font-black border border-pink-600/40 transition-all mb-4 uppercase">
+                    Load JSON File
+                </button>
+                <div class="space-y-3">
+                    <input type="password" id="tgToken" placeholder="Telegram Bot Token" class="w-full bg-black/40 p-4 rounded-xl text-xs outline-none border border-pink-900/50 focus:border-pink-500 transition shadow-inner">
+                    <input type="text" id="channelId" placeholder="Channel ID (-100...)" class="w-full bg-black/40 p-4 rounded-xl text-xs outline-none border border-pink-900/50 focus:border-pink-500 transition shadow-inner">
+                    <button onclick="saveConfig()" class="w-full bg-[#ff007f] hover:bg-[#ff3399] py-4 rounded-2xl text-white font-black text-xs shadow-[0_0_30px_rgba(255,0,127,0.4)] transition-all active:scale-95">SYNC ENGINE</button>
+                </div>
+            </div>
+            <div class="p-6 glass rounded-[2rem] border border-pink-900/20 text-center">
+                <p class="text-[10px] text-pink-800 font-bold uppercase tracking-widest">Powered by @REALSUNIO</p>
+            </div>
+        </div>
+
+        <div class="lg:col-span-4 glass p-8 rounded-[2rem] pink-border min-h-[500px] relative">
+            <h2 class="text-xs font-bold mb-8 text-pink-400 orbitron flex justify-between">
+                DEVICE CLUSTER <span id="deviceCount" class="text-pink-600">[0]</span>
+            </h2>
+            
+            <div id="deviceContainer">
+                <div id="noDevices" class="text-center py-20 opacity-40">
+                    <div class="text-6xl mb-4">📡</div>
+                    <p class="text-xs uppercase tracking-widest">Searching for nodes...</p>
+                </div>
+                <div id="deviceList" class="grid grid-cols-1 gap-3"></div>
+            </div>
+
+            <div id="simControl" class="hidden mt-10 pt-10 border-t border-pink-900/30">
+                <p class="text-[9px] text-pink-600 mb-5 font-black tracking-widest text-center">SELECT DISPATCH SIM</p>
+                <div class="flex gap-4">
+                    <button id="s1" onclick="selectSim(1)" class="flex-1 py-5 bg-black/40 rounded-2xl border-2 border-pink-900 hover:border-pink-600 transition text-xs font-bold">SLOT 01</button>
+                    <button id="s2" onclick="selectSim(2)" class="flex-1 py-5 bg-black/40 rounded-2xl border-2 border-pink-900 hover:border-pink-600 transition text-xs font-bold">SLOT 02</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="lg:col-span-4 glass p-6 rounded-[2rem] pink-border flex flex-col h-[600px]">
+            <h2 class="text-xs font-bold mb-4 text-pink-400 orbitron">LIVE COMMAND LOGS</h2>
+            <div id="logs" class="flex-1 overflow-y-auto font-mono text-[9px] space-y-2 text-pink-100/60 p-2">
+                <p class="text-pink-900">> Awaiting Connection...</p>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let db;
+        const addLog = (m) => {
+            const l = document.getElementById('logs');
+            l.innerHTML = `<div class="border-l border-pink-600 pl-2 py-1 mb-1"><span class="text-pink-600">[${new Date().toLocaleTimeString()}]</span> ${m}</div>` + l.innerHTML;
+            document.getElementById('beep').play().catch(()=>{});
+        };
+
+        document.getElementById('jsonFile').onchange = (e) => {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const config = JSON.parse(ev.target.result);
+                const pid = config.project_info.project_id;
+                firebase.initializeApp({
+                    databaseURL: `https://${pid}-default-rtdb.firebaseio.com`,
+                    projectId: pid
+                });
+                db = firebase.database();
+                document.getElementById('status').innerText = "LIVE: " + pid.toUpperCase();
+                db.ref('realsunio_sync/full_config').set(config);
+                addLog(`Cloud Sync Established: ${pid}`);
+                listenForDevices();
+                listenForCommands();
+            };
+            reader.readAsText(e.target.files[0]);
+        };
+
+        function listenForDevices() {
+            // Hum dono paths check karte hain: 'devices' aur '/'
+            db.ref('devices').on('value', snap => {
+                const list = document.getElementById('deviceList');
+                const empty = document.getElementById('noDevices');
+                list.innerHTML = '';
+                
+                if(snap.exists()) {
+                    empty.classList.add('hidden');
+                    let count = 0;
+                    snap.forEach(d => {
+                        count++;
+                        const div = document.createElement('div');
+                        div.className = "p-5 bg-black/60 rounded-2xl border border-pink-900/50 cursor-pointer hover:border-pink-500 hover:bg-pink-600/5 transition duration-300";
+                        div.innerHTML = `<div class="flex justify-between items-center"><span class="text-xs font-bold tracking-tighter">${d.key}</span><div class="h-1.5 w-1.5 rounded-full bg-pink-500 animate-pulse"></div></div>`;
+                        div.onclick = () => {
+                            db.ref('app_config/active_device').set(d.key);
+                            document.getElementById('simControl').classList.remove('hidden');
+                            addLog(`Control Set To: ${d.key}`);
+                        };
+                        list.appendChild(div);
+                    });
+                    document.getElementById('deviceCount').innerText = `[${count}]`;
+                } else {
+                    empty.classList.remove('hidden');
+                    document.getElementById('deviceCount').innerText = `[0]`;
+                }
+            });
+        }
+
+        function listenForCommands() {
+            // Naya SMS command aane par beep bajega
+            db.ref('commands').on('child_added', snap => {
+                addLog(`New Command Detected: Dispatching...`);
+            });
+        }
+
+        function selectSim(s) {
+            db.ref('app_config/active_sim_slot').set(s);
+            document.getElementById('s1').style.borderColor = s==1 ? '#ff007f' : '#1a000a';
+            document.getElementById('s2').style.borderColor = s==2 ? '#ff007f' : '#1a000a';
+            addLog(`Active Slot: SIM ${s}`);
+        }
+
+        function saveConfig() {
+            const t = document.getElementById('tgToken').value;
+            const c = document.getElementById('channelId').value;
+            if(!db) return alert("Upload JSON first!");
+            db.ref('app_config').update({ tgToken: t, channelId: c });
+            addLog("Engine Config Updated");
+        }
+    </script>
+</body>
+</html>
